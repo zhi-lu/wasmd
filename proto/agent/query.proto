@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package agent;
+
+import "agent/tx.proto";
+import "gogoproto/gogo.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/agent/types";
+
+option (gogoproto.goproto_getters_all) = false;
+
+service Query {
+  rpc Model(QueryModelRequest) returns (QueryModelResponse) {
+    option (google.api.http).get = "/agent/v1/models/{id}";
+  }
+
+  rpc Models(QueryModelsRequest) returns (QueryModelsResponse) {
+    option (google.api.http).get = "/agent/v1/models";
+  }
+}
+
+message QueryModelRequest {
+  string id = 1;
+}
+
+message QueryModelResponse {
+  Model model = 1;
+}
+
+message QueryModelsRequest {}
+
+message QueryModelsResponse {
+  repeated Model models = 1;
+}

@@ -131,6 +131,10 @@ import (
 	"github.com/CosmWasm/wasmd/x/wasm"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
+
+	agentkeeper "github.com/CosmWasm/wasmd/x/agent/keeper"
+	agentmodule "github.com/CosmWasm/wasmd/x/agent/module"
+	agenttypes "github.com/CosmWasm/wasmd/x/agent/types"
 )
 
 const appName = "WasmApp"
@@ -218,6 +222,7 @@ type WasmApp struct {
 	ICAHostKeeper       icahostkeeper.Keeper
 	TransferKeeper      ibctransferkeeper.Keeper
 	WasmKeeper          wasmkeeper.Keeper
+	AgentKeeper         agentkeeper.Keeper
 
 	// the module manager
 	ModuleManager      *module.Manager
@@ -308,7 +313,7 @@ func NewWasmApp(
 		authzkeeper.StoreKey, nftkeeper.StoreKey, group.StoreKey,
 		// non sdk store keys
 		ibcexported.StoreKey, ibctransfertypes.StoreKey,
-		wasmtypes.StoreKey, icahosttypes.StoreKey,
+		wasmtypes.StoreKey, icahosttypes.StoreKey, agenttypes.StoreKey,
 		icacontrollertypes.StoreKey,
 	)
 
@@ -607,6 +612,11 @@ func NewWasmApp(
 		wasmOpts...,
 	)
 
+	app.AgentKeeper = agentkeeper.NewKeeper(
+		appCodec,
+		runtime.NewKVStoreService(keys[agenttypes.StoreKey]),
+	)
+
 	// Create fee enabled wasm ibc Stack
 	wasmStackIBCHandler := wasm.NewIBCHandler(app.WasmKeeper, app.IBCKeeper.ChannelKeeper, app.IBCKeeper.ChannelKeeper)
 
@@ -689,6 +699,7 @@ func NewWasmApp(
 		circuit.NewAppModule(appCodec, app.CircuitKeeper),
 		// non sdk modules
 		wasm.NewAppModule(appCodec, &app.WasmKeeper, app.StakingKeeper, app.AccountKeeper, app.BankKeeper, app.MsgServiceRouter(), app.GetSubspace(wasmtypes.ModuleName)),
+		agentmodule.NewAppModule(appCodec, app.AgentKeeper),
 		ibc.NewAppModule(app.IBCKeeper),
 		transfer.NewAppModule(app.TransferKeeper),
 		ica.NewAppModule(&app.ICAControllerKeeper, &app.ICAHostKeeper),
@@ -772,6 +783,7 @@ func NewWasmApp(
 		ibcexported.ModuleName,
 		icatypes.ModuleName,
 		// wasm after ibc transfer
+		agenttypes.ModuleName,
 		wasmtypes.ModuleName,
 	}
 	app.ModuleManager.SetOrderInitGenesis(genesisModuleOrder...)
@@ -1131,5 +1143,6 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(icahosttypes.SubModuleName).WithKeyTable(icahosttypes.ParamKeyTable())
 
 	paramsKeeper.Subspace(wasmtypes.ModuleName)
+	paramsKeeper.Subspace(agenttypes.ModuleName)
 	return paramsKeeper
 }

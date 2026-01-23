@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package agent;
+
+import "cosmos/msg/v1/msg.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/agent/types";
+
+option (gogoproto.goproto_getters_all) = false;
+
+// 定义模型
+message Model {
+  string id = 1;
+  string name = 2;
+  string url = 3;
+  string creator = 4;
+}
+
+// 注册模型
+message MsgRegisterModel {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  Model model = 2;
+}
+
+// 删除模型
+message MsgDeleteModel {
+  option (cosmos.msg.v1.signer) = "creator";
+
+  string creator = 1;
+  string model_id = 2;
+}
+
+// 返回值（空）
+message MsgRegisterModelResponse {}
+message MsgDeleteModelResponse {}
+
+// 服务定义
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+
+  rpc RegisterModel(MsgRegisterModel) returns (MsgRegisterModelResponse);
+  rpc DeleteModel(MsgDeleteModel) returns (MsgDeleteModelResponse);
+}
+

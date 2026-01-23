@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package agent;
+
+import "agent/tx.proto";
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/CosmWasm/wasmd/x/agent/types";
+
+option (gogoproto.goproto_getters_all) = false;
+
+// GenesisState defines the agent module's genesis state.
+message GenesisState {
+  repeated Model models = 1;
+}
