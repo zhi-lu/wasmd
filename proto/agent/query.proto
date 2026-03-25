@@ -11,25 +11,84 @@ option go_package = "github.com/CosmWasm/wasmd/x/agent/types";
 option (gogoproto.goproto_getters_all) = false;
 
 service Query {
+  // ── Model ──
   rpc Model(QueryModelRequest) returns (QueryModelResponse) {
     option (google.api.http).get = "/agent/v1/models/{id}";
   }
-
   rpc Models(QueryModelsRequest) returns (QueryModelsResponse) {
     option (google.api.http).get = "/agent/v1/models";
   }
+
+  // ── Agent ──
+  rpc Agent(QueryAgentRequest) returns (QueryAgentResponse) {
+    option (google.api.http).get = "/agent/v1/agents/{id}";
+  }
+  rpc Agents(QueryAgentsRequest) returns (QueryAgentsResponse) {
+    option (google.api.http).get = "/agent/v1/agents";
+  }
+  rpc AgentsByModel(QueryAgentsByModelRequest) returns (QueryAgentsResponse) {
+    option (google.api.http).get = "/agent/v1/agents/by_model/{model_id}";
+  }
+
+  // ── Task ──
+  rpc Task(QueryTaskRequest) returns (QueryTaskResponse) {
+    option (google.api.http).get = "/agent/v1/tasks/{id}";
+  }
+  rpc Tasks(QueryTasksRequest) returns (QueryTasksResponse) {
+    option (google.api.http).get = "/agent/v1/tasks";
+  }
+  rpc TasksByAgent(QueryTasksByAgentRequest) returns (QueryTasksResponse) {
+    option (google.api.http).get = "/agent/v1/tasks/by_agent/{agent_id}";
+  }
+  rpc TasksByCreator(QueryTasksByCreatorRequest) returns (QueryTasksResponse) {
+    option (google.api.http).get = "/agent/v1/tasks/by_creator/{creator}";
+  }
 }
+
+// ── Model ──
 
 message QueryModelRequest {
   string id = 1;
 }
-
 message QueryModelResponse {
   Model model = 1;
 }
-
 message QueryModelsRequest {}
-
 message QueryModelsResponse {
   repeated Model models = 1;
+}
+
+// ── Agent ──
+
+message QueryAgentRequest {
+  string id = 1;
+}
+message QueryAgentResponse {
+  Agent agent = 1;
+}
+message QueryAgentsRequest {}
+message QueryAgentsResponse {
+  repeated Agent agents = 1;
+}
+message QueryAgentsByModelRequest {
+  string model_id = 1;
+}
+
+// ── Task ──
+
+message QueryTaskRequest {
+  string id = 1;
+}
+message QueryTaskResponse {
+  Task task = 1;
+}
+message QueryTasksRequest {}
+message QueryTasksResponse {
+  repeated Task tasks = 1;
+}
+message QueryTasksByAgentRequest {
+  string agent_id = 1;
+}
+message QueryTasksByCreatorRequest {
+  string creator = 1;
 }

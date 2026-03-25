@@ -179,6 +179,7 @@ var maccPerms = map[string][]string{
 	ibctransfertypes.ModuleName: {authtypes.Minter, authtypes.Burner},
 	icatypes.ModuleName:         nil,
 	wasmtypes.ModuleName:        {authtypes.Burner},
+	agenttypes.ModuleName:       nil,
 }
 
 var (
@@ -615,6 +616,7 @@ func NewWasmApp(
 	app.AgentKeeper = agentkeeper.NewKeeper(
 		appCodec,
 		runtime.NewKVStoreService(keys[agenttypes.StoreKey]),
+		app.BankKeeper,
 	)
 
 	// Create fee enabled wasm ibc Stack
