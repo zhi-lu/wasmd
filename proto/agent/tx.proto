@@ -3,45 +3,173 @@ syntax = "proto3";
 package agent;
 
 import "cosmos/msg/v1/msg.proto";
+import "cosmos/base/v1beta1/coin.proto";
 import "gogoproto/gogo.proto";
 
 option go_package = "github.com/CosmWasm/wasmd/x/agent/types";
 
 option (gogoproto.goproto_getters_all) = false;
 
-// 定义模型
+// ───────────────────── 数据实体 ─────────────────────
+
+// Model 代表一个 AI 模型元信息
 message Model {
-  string id = 1;
-  string name = 2;
-  string url = 3;
+  string id      = 1;
+  string name    = 2;
+  string url     = 3;
   string creator = 4;
 }
 
-// 注册模型
+// AgentStatus 表示 Agent 的当前状态
+enum AgentStatus {
+  AGENT_STATUS_UNSPECIFIED = 0;
+  AGENT_STATUS_ACTIVE      = 1;
+  AGENT_STATUS_INACTIVE    = 2;
+}
+
+// Agent 代表一个 AI 服务提供方（运营者注册，绑定模型，收取费用）
+message Agent {
+  string id          = 1;
+  string name        = 2;
+  string model_id    = 3;  // 关联的 Model.id
+  string operator    = 4;  // 运营者地址（bech32）
+  string description = 5;
+  repeated cosmos.base.v1beta1.Coin fee_per_task = 6 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+  AgentStatus status            = 7;
+  uint64      reputation_score  = 8;
+  uint64      tasks_completed   = 9;
+}
+
+// TaskStatus 表示 Task 的生命周期状态
+enum TaskStatus {
+  TASK_STATUS_UNSPECIFIED = 0;
+  TASK_STATUS_PENDING     = 1;  // 等待 Agent 处理
+  TASK_STATUS_COMPLETED   = 2;  // Agent 已提交结果
+  TASK_STATUS_CANCELLED   = 3;  // 创建者取消
+}
+
+// Task 代表一次 AI 推理任务请求
+message Task {
+  string id          = 1;
+  string agent_id    = 2;
+  string creator     = 3;  // 任务发起者地址
+  string input_hash  = 4;  // 输入数据摘要（链下存储，链上存 hash）
+  string output_hash = 5;  // 推理结果摘要（Agent 提交后填写）
+  string result_url  = 6;  // 结果可获取的链下 URL
+  TaskStatus status  = 7;
+  repeated cosmos.base.v1beta1.Coin fee = 8 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+  int64 created_at   = 9;  // unix timestamp
+  int64 completed_at = 10;
+}
+
+// ───────────────────── Model 消息 ─────────────────────
+
 message MsgRegisterModel {
   option (cosmos.msg.v1.signer) = "creator";
-
   string creator = 1;
-  Model model = 2;
+  Model  model   = 2;
 }
+message MsgRegisterModelResponse {}
 
-// 删除模型
 message MsgDeleteModel {
   option (cosmos.msg.v1.signer) = "creator";
-
-  string creator = 1;
+  string creator  = 1;
   string model_id = 2;
 }
-
-// 返回值（空）
-message MsgRegisterModelResponse {}
 message MsgDeleteModelResponse {}
 
-// 服务定义
+// ───────────────────── Agent 消息 ─────────────────────
+
+message MsgRegisterAgent {
+  option (cosmos.msg.v1.signer) = "operator";
+  string operator    = 1;
+  string name        = 2;
+  string model_id    = 3;
+  string description = 4;
+  repeated cosmos.base.v1beta1.Coin fee_per_task = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+message MsgRegisterAgentResponse {
+  string agent_id = 1;
+}
+
+message MsgUpdateAgent {
+  option (cosmos.msg.v1.signer) = "operator";
+  string operator    = 1;
+  string agent_id    = 2;
+  string name        = 3;
+  string description = 4;
+  repeated cosmos.base.v1beta1.Coin fee_per_task = 5 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+message MsgUpdateAgentResponse {}
+
+message MsgDeactivateAgent {
+  option (cosmos.msg.v1.signer) = "operator";
+  string operator = 1;
+  string agent_id = 2;
+}
+message MsgDeactivateAgentResponse {}
+
+// ───────────────────── Task 消息 ─────────────────────
+
+message MsgCreateTask {
+  option (cosmos.msg.v1.signer) = "creator";
+  string creator    = 1;
+  string agent_id   = 2;
+  string input_hash = 3;
+  repeated cosmos.base.v1beta1.Coin fee = 4 [
+    (gogoproto.nullable) = false,
+    (gogoproto.castrepeated) = "github.com/cosmos/cosmos-sdk/types.Coins"
+  ];
+}
+message MsgCreateTaskResponse {
+  string task_id = 1;
+}
+
+message MsgSubmitTaskResult {
+  option (cosmos.msg.v1.signer) = "operator";
+  string operator    = 1;
+  string task_id     = 2;
+  string output_hash = 3;
+  string result_url  = 4;
+}
+message MsgSubmitTaskResultResponse {}
+
+message MsgCancelTask {
+  option (cosmos.msg.v1.signer) = "creator";
+  string creator = 1;
+  string task_id = 2;
+}
+message MsgCancelTaskResponse {}
+
+// ───────────────────── 服务定义 ─────────────────────
+
 service Msg {
   option (cosmos.msg.v1.service) = true;
 
+  // Model
   rpc RegisterModel(MsgRegisterModel) returns (MsgRegisterModelResponse);
   rpc DeleteModel(MsgDeleteModel) returns (MsgDeleteModelResponse);
+
+  // Agent
+  rpc RegisterAgent(MsgRegisterAgent) returns (MsgRegisterAgentResponse);
+  rpc UpdateAgent(MsgUpdateAgent) returns (MsgUpdateAgentResponse);
+  rpc DeactivateAgent(MsgDeactivateAgent) returns (MsgDeactivateAgentResponse);
+
+  // Task
+  rpc CreateTask(MsgCreateTask) returns (MsgCreateTaskResponse);
+  rpc SubmitTaskResult(MsgSubmitTaskResult) returns (MsgSubmitTaskResultResponse);
+  rpc CancelTask(MsgCancelTask) returns (MsgCancelTaskResponse);
 }
 
