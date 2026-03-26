@@ -18,6 +18,47 @@ addition of the `x/wasm` module.
 
 For critical security issues & disclosure, see [SECURITY.md](SECURITY.md).
 
+## Agent Module (x/agent)
+
+This repository includes an `x/agent` module for on-chain AI service orchestration.
+
+The module provides three core entities:
+
+- `Model`: Registers model metadata (`id`, `name`, `url`, `creator`).
+- `Agent`: Service operator bound to a model, with configurable per-task fee and status.
+- `Task`: User request lifecycle with escrowed fee, result submission, and cancellation support.
+
+Main capabilities:
+
+- Register and delete models.
+- Register, update, and deactivate agents.
+- Create tasks against active agents.
+- Escrow task fees in module account and release/refund based on task outcome.
+- Query models, agents, and tasks from gRPC/CLI.
+
+Quick CLI examples:
+
+```bash
+# Model
+wasmd tx agent register-model <model-id> <name> <url> --from <creator>
+wasmd tx agent delete-model <model-id> --from <creator>
+
+# Agent
+wasmd tx agent register-agent <name> <model-id> <description> <fee> --from <operator>
+wasmd tx agent update-agent <agent-id> <name> <description> <fee> --from <operator>
+wasmd tx agent deactivate-agent <agent-id> --from <operator>
+
+# Task
+wasmd tx agent create-task <agent-id> <input-hash> <fee> --from <creator>
+wasmd tx agent submit-task-result <task-id> <output-hash> <result-url> --from <operator>
+wasmd tx agent cancel-task <task-id> --from <creator>
+
+# Query
+wasmd query agent models
+wasmd query agent agents
+wasmd query agent tasks
+```
+
 ## Compatibility
 
 ### For contract developers
